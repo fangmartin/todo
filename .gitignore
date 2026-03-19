@@ -1,3 +1,11 @@
+# Node / Next.js
+node_modules/
+.next/
+out/
+npm-debug.log*
+.npm/
+.vercel/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
