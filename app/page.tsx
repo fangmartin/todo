@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 type Todo = {
   id: number;
@@ -8,14 +8,84 @@ type Todo = {
   completed: boolean;
 };
 
+export const TODO_STORAGE_KEY = "todo-app.todos";
+
+const isStoredTodo = (value: unknown): value is Todo => {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Record<string, unknown>;
+
+  return (
+    typeof candidate.id === "number" &&
+    typeof candidate.title === "string" &&
+    typeof candidate.completed === "boolean"
+  );
+};
+
+const readStoredTodos = () => {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const storedTodos = window.localStorage.getItem(TODO_STORAGE_KEY);
+
+    if (!storedTodos) {
+      return [];
+    }
+
+    const parsedTodos: unknown = JSON.parse(storedTodos);
+
+    if (!Array.isArray(parsedTodos)) {
+      return [];
+    }
+
+    return parsedTodos.filter(isStoredTodo);
+  } catch {
+    return [];
+  }
+};
+
+const writeStoredTodos = (todos: Todo[]) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(todos));
+  } catch {
+    // Ignore storage write failures so the UI remains usable.
+  }
+};
+
 export default function HomePage() {
   const [draft, setDraft] = useState("");
   const [todos, setTodos] = useState<Todo[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
+  const [hasLoadedTodos, setHasLoadedTodos] = useState(false);
   const nextTodoId = useRef(1);
 
   const trimmedDraft = draft.trim();
   const todoCountLabel = `${todos.length} item${todos.length === 1 ? "" : "s"}`;
+
+  useEffect(() => {
+    const restoredTodos = readStoredTodos();
+
+    setTodos(restoredTodos);
+    nextTodoId.current =
+      restoredTodos.reduce((maxTodoId, todo) => Math.max(maxTodoId, todo.id), 0) + 1;
+    setHasLoadedTodos(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedTodos) {
+      return;
+    }
+
+    writeStoredTodos(todos);
+  }, [hasLoadedTodos, todos]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
