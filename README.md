@@ -1,74 +1,88 @@
-# MAR-5 Next.js Todo App
+# Todo App
 
-Minimal Next.js Todo application scaffold built with TypeScript and the App Router.
+This repository contains a small Todo application built with Next.js 16, the App Router, React 19, and TypeScript.
+
+The app is designed to keep a short personal task list easy to manage in the browser. Todos are stored in `localStorage` when browser storage is available, and the UI falls back to a session-only mode with a notice if persistence is blocked.
+
+## Feature summary
+
+- Add todos from the composer
+- Mark todos complete or incomplete
+- Edit existing todo titles
+- Delete individual todos
+- Filter the list by all, active, and completed items
+- Clear all completed todos in one action
+- Restore saved todos after a page reload
 
 ## Requirements
 
-- Node.js 20+
-- npm 10+
+- Node.js 20 or newer
+- npm 10 or newer
 
 ## Setup
+
+Install dependencies:
 
 ```bash
 npm install
 ```
 
-## Run locally
+## Development
+
+Start the local development server:
 
 ```bash
 npm run dev
 ```
 
-Open `http://localhost:3000` to view the Todo app shell.
+Then open `http://localhost:3000`.
 
-## Production build
+## Commands
 
 ```bash
+npm run dev
 npm run build
 npm run start
-```
-
-## Code quality
-
-```bash
+npm test
+npm run test:watch
 npm run lint
+npm run typecheck
 npm run format:check
 npm run format
 ```
 
-`npm run lint` runs the baseline quality gate for this repo:
+What each command does:
 
-- TypeScript type-checking via `tsc --noEmit`
-- Repo-local formatting checks for line endings, trailing whitespace, and final newlines
+- `npm run dev`: start the Next.js development server
+- `npm run build`: create a production build
+- `npm run start`: serve the production build locally
+- `npm test`: run the Vitest suite once
+- `npm run test:watch`: run tests in watch mode
+- `npm run lint`: run the repository quality gate (`typecheck` plus formatting checks)
+- `npm run typecheck`: run TypeScript without emitting files
+- `npm run format:check`: verify the repository formatting baseline
+- `npm run format`: rewrite files to match the formatting baseline
 
-Use `npm run format` to normalize the formatting baseline in place. Use
-`npm run format:check` when you want the formatting check without modifying
-files.
+## Validate the app
 
-## Tests
+Use this sequence to verify the app and the documented workflow:
 
 ```bash
+npm install
+npm run dev
 npm test
+npm run lint
+npm run build
 ```
 
-`npm test` runs the Vitest baseline in a `jsdom` environment so the repo can
-cover React component tests now and plain TypeScript logic tests under the same
-runner as the Todo app grows.
+Suggested manual check while `npm run dev` is running:
 
-Use watch mode during development with:
+1. Add a todo.
+2. Edit it, toggle completion, and switch between the filter buttons.
+3. Reload the page and confirm the todo persists.
+4. Mark a todo complete and use `Clear completed`.
 
-```bash
-npm run test:watch
-```
+## Testing and quality notes
 
-## Available scripts
-
-- `npm run dev` starts the development server
-- `npm run build` creates a production build
-- `npm run start` runs the production server
-- `npm test` runs the Vitest test suite once
-- `npm run test:watch` runs Vitest in watch mode
-- `npm run lint` runs the code quality baseline
-- `npm run format` normalizes the repo-local formatting baseline
-- `npm run format:check` verifies the formatting baseline without changing files
-- `npm run typecheck` runs the TypeScript compiler without emitting files
+- Tests run with Vitest in a `jsdom` environment.
+- `npm run lint` does not invoke ESLint in this repository. It currently verifies TypeScript correctness and the repo-local formatting baseline.
