@@ -5,6 +5,7 @@ import { FormEvent, useState } from "react";
 type Todo = {
   id: number;
   title: string;
+  completed: boolean;
 };
 
 export default function HomePage() {
@@ -25,10 +26,18 @@ export default function HomePage() {
 
     setTodos((currentTodos) => [
       ...currentTodos,
-      { id: currentTodos.length + 1, title: trimmedDraft },
+      { id: currentTodos.length + 1, title: trimmedDraft, completed: false },
     ]);
     setDraft("");
     setErrorMessage("");
+  };
+
+  const handleToggleTodo = (todoId: number) => {
+    setTodos((currentTodos) =>
+      currentTodos.map((todo) =>
+        todo.id === todoId ? { ...todo, completed: !todo.completed } : todo,
+      ),
+    );
   };
 
   return (
@@ -85,8 +94,25 @@ export default function HomePage() {
           {todos.length ? (
             <ul className="todo-items" aria-label="Current todos">
               {todos.map((todo) => (
-                <li className="todo-item" key={todo.id}>
-                  {todo.title}
+                <li
+                  className={`todo-item${todo.completed ? " todo-item-completed" : ""}`}
+                  key={todo.id}
+                >
+                  <label className="todo-toggle">
+                    <input
+                      className="todo-toggle-input"
+                      type="checkbox"
+                      checked={todo.completed}
+                      onChange={() => handleToggleTodo(todo.id)}
+                      aria-label={`Toggle completion for ${todo.title}`}
+                    />
+                    <span className="todo-toggle-indicator" aria-hidden="true" />
+                  </label>
+                  <span
+                    className={`todo-title${todo.completed ? " todo-title-completed" : ""}`}
+                  >
+                    {todo.title}
+                  </span>
                 </li>
               ))}
             </ul>
