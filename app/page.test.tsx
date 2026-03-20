@@ -245,6 +245,49 @@ describe("HomePage", () => {
     );
   });
 
+  it("shows clear completed only when relevant and removes only completed todos after refresh", () => {
+    const { unmount } = render(<HomePage />);
+
+    const input = screen.getByRole("textbox", { name: "New task" });
+    const button = screen.getByRole("button", { name: "Add todo" });
+
+    expect(
+      screen.queryByRole("button", { name: "Clear completed" }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.change(input, { target: { value: "Buy milk" } });
+    fireEvent.click(button);
+    fireEvent.change(input, { target: { value: "Walk dog" } });
+    fireEvent.click(button);
+
+    expect(
+      screen.queryByRole("button", { name: "Clear completed" }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Toggle completion for Buy milk" }),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear completed" }));
+
+    expect(screen.queryByText("Buy milk")).not.toBeInTheDocument();
+    expect(screen.getByText("Walk dog")).toBeInTheDocument();
+    expect(screen.getByText(activeTodoCountLabel(1))).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Clear completed" }),
+    ).not.toBeInTheDocument();
+    expect(window.localStorage.getItem(TODO_STORAGE_KEY)).toBe(
+      JSON.stringify([{ id: 2, title: "Walk dog", completed: false }]),
+    );
+
+    unmount();
+    render(<HomePage />);
+
+    expect(screen.queryByText("Buy milk")).not.toBeInTheDocument();
+    expect(screen.getByText("Walk dog")).toBeInTheDocument();
+    expect(screen.getByText(activeTodoCountLabel(1))).toBeInTheDocument();
+  });
+
   it("updates the active count when todos are added, completed, uncompleted, and deleted", () => {
     render(<HomePage />);
 
