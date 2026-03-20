@@ -129,6 +129,76 @@ describe("HomePage", () => {
     expect(screen.getByText("No todos yet.")).toBeInTheDocument();
   });
 
+  it("enters edit mode, saves an updated title, and restores the edit after reload", () => {
+    window.localStorage.setItem(
+      TODO_STORAGE_KEY,
+      JSON.stringify([{ id: 1, title: "Buy milk", completed: false }]),
+    );
+
+    const { unmount } = render(<HomePage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit Buy milk" }));
+
+    const editInput = screen.getByRole("textbox", { name: "Edit Buy milk" });
+
+    expect(editInput).toHaveValue("Buy milk");
+    expect(screen.getByRole("button", { name: "Save" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+
+    fireEvent.change(editInput, { target: { value: "Buy oat milk" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(screen.queryByRole("textbox", { name: "Edit Buy milk" })).not.toBeInTheDocument();
+    expect(screen.getByText("Buy oat milk")).toBeInTheDocument();
+    expect(
+      screen.getByRole("checkbox", { name: "Toggle completion for Buy oat milk" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Edit Buy oat milk" }),
+    ).toBeInTheDocument();
+    expect(window.localStorage.getItem(TODO_STORAGE_KEY)).toBe(
+      JSON.stringify([{ id: 1, title: "Buy oat milk", completed: false }]),
+    );
+
+    unmount();
+    render(<HomePage />);
+
+    expect(screen.getByText("Buy oat milk")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Edit Buy oat milk" }),
+    ).toBeInTheDocument();
+  });
+
+  it("rejects whitespace-only edits and keeps the original title unchanged", () => {
+    window.localStorage.setItem(
+      TODO_STORAGE_KEY,
+      JSON.stringify([{ id: 1, title: "Buy milk", completed: false }]),
+    );
+
+    render(<HomePage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit Buy milk" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Edit Buy milk" }), {
+      target: { value: "   " },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Edited todo title cannot be empty.",
+    );
+    expect(screen.getByRole("textbox", { name: "Edit Buy milk" })).toHaveValue("   ");
+    expect(window.localStorage.getItem(TODO_STORAGE_KEY)).toBe(
+      JSON.stringify([{ id: 1, title: "Buy milk", completed: false }]),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(screen.getByText("Buy milk")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Edit Buy milk" }),
+    ).toBeInTheDocument();
+  });
+
   it("restores persisted todos with their completed state on load", () => {
     window.localStorage.setItem(
       TODO_STORAGE_KEY,

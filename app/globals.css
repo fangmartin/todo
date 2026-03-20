@@ -250,6 +250,40 @@ input {
   text-decoration: line-through;
 }
 
+.todo-edit-form {
+  flex: 1;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.todo-edit-input {
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid rgba(108, 85, 59, 0.18);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--text);
+}
+
+.todo-edit-input[aria-invalid="true"] {
+  border-color: rgba(167, 79, 29, 0.52);
+}
+
+.todo-edit-error {
+  color: var(--accent-strong);
+  font-size: 0.88rem;
+}
+
+.todo-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  flex-shrink: 0;
+}
+
+.todo-edit-button,
+.todo-save-button,
+.todo-cancel-button,
 .todo-delete-button {
   flex-shrink: 0;
   padding: 0.45rem 0.75rem;
@@ -261,6 +295,19 @@ input {
   font-weight: 700;
 }
 
+.todo-save-button {
+  border-color: transparent;
+  background: var(--accent);
+  color: white;
+}
+
+.todo-cancel-button {
+  color: var(--muted);
+}
+
+.todo-edit-button:focus-visible,
+.todo-save-button:focus-visible,
+.todo-cancel-button:focus-visible,
 .todo-delete-button:focus-visible {
   outline: 2px solid rgba(211, 109, 49, 0.45);
   outline-offset: 3px;
@@ -334,6 +381,14 @@ input {
   }
 
   .todo-form button {
+    width: 100%;
+  }
+
+  .todo-item {
+    align-items: flex-start;
+  }
+
+  .todo-item-actions {
     width: 100%;
   }
 }
