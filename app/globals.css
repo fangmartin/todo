@@ -219,6 +219,9 @@ button {
 }
 
 .todo-form button {
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
   min-height: 3.2rem;
   align-self: end;
   padding: 0.95rem 1.35rem;

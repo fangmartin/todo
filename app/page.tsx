@@ -256,9 +256,7 @@ export default function HomePage() {
       editButtonRefs.current.delete(todoId);
     };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
+  const submitDraft = () => {
     if (!canSubmitDraft) {
       setErrorMessage("Enter a todo before submitting.");
       composerInputRef.current?.focus();
@@ -272,6 +270,11 @@ export default function HomePage() {
     setDraft("");
     setErrorMessage("");
     composerInputRef.current?.focus();
+  };
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    submitDraft();
   };
 
   const handleToggleTodo = (todoId: number) => {
@@ -407,7 +410,7 @@ export default function HomePage() {
               </span>
             ) : null}
           </div>
-          <button type="submit" disabled={!canSubmitDraft}>
+          <button type="button" disabled={!canSubmitDraft} onClick={submitDraft}>
             Add todo
           </button>
         </form>
