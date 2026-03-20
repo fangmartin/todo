@@ -61,6 +61,40 @@ describe("HomePage", () => {
     expect(screen.getByText("Buy milk")).not.toHaveClass("todo-title-completed");
   });
 
+  it("deletes a todo immediately without affecting the remaining items", () => {
+    render(<HomePage />);
+
+    const input = screen.getByRole("textbox", { name: "New task" });
+    const button = screen.getByRole("button", { name: "Add todo" });
+
+    fireEvent.change(input, { target: { value: "Buy milk" } });
+    fireEvent.click(button);
+    fireEvent.change(input, { target: { value: "Walk dog" } });
+    fireEvent.click(button);
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete Buy milk" }));
+
+    expect(screen.queryByText("Buy milk")).not.toBeInTheDocument();
+    expect(screen.getByText("Walk dog")).toBeInTheDocument();
+    expect(screen.getByText("1 item")).toBeInTheDocument();
+  });
+
+  it("restores the empty state after deleting the last todo", () => {
+    render(<HomePage />);
+
+    const input = screen.getByRole("textbox", { name: "New task" });
+    const button = screen.getByRole("button", { name: "Add todo" });
+
+    fireEvent.change(input, { target: { value: "Buy milk" } });
+    fireEvent.click(button);
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete Buy milk" }));
+
+    expect(screen.queryByRole("list", { name: "Current todos" })).not.toBeInTheDocument();
+    expect(screen.getByText("0 items")).toBeInTheDocument();
+    expect(screen.getByText("No todos yet.")).toBeInTheDocument();
+  });
+
   it("rejects whitespace-only todos", () => {
     render(<HomePage />);
 
