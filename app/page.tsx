@@ -126,6 +126,7 @@ export default function HomePage() {
   const pendingFocusTarget = useRef<FocusTarget | null>(null);
 
   const trimmedDraft = draft.trim();
+  const canSubmitDraft = trimmedDraft.length > 0;
   const trimmedEditDraft = editDraft.trim();
   const totalTodoCount = todos.length;
   const activeTodoCount = todos.filter((todo) => !todo.completed).length;
@@ -258,7 +259,7 @@ export default function HomePage() {
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!trimmedDraft) {
+    if (!canSubmitDraft) {
       setErrorMessage("Enter a todo before submitting.");
       composerInputRef.current?.focus();
       return;
@@ -406,7 +407,7 @@ export default function HomePage() {
               </span>
             ) : null}
           </div>
-          <button type="submit" disabled={!trimmedDraft}>
+          <button type="submit" disabled={!canSubmitDraft}>
             Add todo
           </button>
         </form>
