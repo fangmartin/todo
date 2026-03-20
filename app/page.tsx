@@ -1,4 +1,36 @@
+"use client";
+
+import { FormEvent, useState } from "react";
+
+type Todo = {
+  id: number;
+  title: string;
+};
+
 export default function HomePage() {
+  const [draft, setDraft] = useState("");
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const trimmedDraft = draft.trim();
+  const todoCountLabel = `${todos.length} item${todos.length === 1 ? "" : "s"}`;
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!trimmedDraft) {
+      setErrorMessage("Enter a todo before submitting.");
+      return;
+    }
+
+    setTodos((currentTodos) => [
+      ...currentTodos,
+      { id: currentTodos.length + 1, title: trimmedDraft },
+    ]);
+    setDraft("");
+    setErrorMessage("");
+  };
+
   return (
     <main className="page-shell">
       <section className="todo-card">
@@ -6,22 +38,34 @@ export default function HomePage() {
           <p className="eyebrow">Starter layout</p>
           <h1>Todo App</h1>
           <p className="lede">
-            A clean shell for capturing tasks is ready. Adding, listing, and
-            managing todos will come next.
+            Capture what needs doing, then see each todo appear instantly in
+            the list below.
           </p>
         </div>
 
-        <form className="todo-form" aria-label="Todo composer">
+        <form className="todo-form" aria-label="Todo composer" onSubmit={handleSubmit}>
           <label className="field">
             <span className="field-label">New task</span>
             <input
               type="text"
               placeholder="Add a todo"
-              disabled
-              aria-disabled="true"
+              value={draft}
+              onChange={(event) => {
+                setDraft(event.target.value);
+                if (errorMessage) {
+                  setErrorMessage("");
+                }
+              }}
+              aria-invalid={Boolean(errorMessage)}
+              aria-describedby={errorMessage ? "new-task-error" : undefined}
             />
+            {errorMessage ? (
+              <span className="field-error" id="new-task-error" role="alert">
+                {errorMessage}
+              </span>
+            ) : null}
           </label>
-          <button type="button" disabled aria-disabled="true">
+          <button type="submit" disabled={!trimmedDraft}>
             Add todo
           </button>
         </form>
@@ -29,18 +73,31 @@ export default function HomePage() {
         <section className="todo-list-section" aria-labelledby="preview-heading">
           <div className="section-header">
             <h2 id="preview-heading">Todo List</h2>
-            <span>0 items</span>
+            <span>{todoCountLabel}</span>
           </div>
 
-          <p className="section-note">Todo items will appear here.</p>
+          <p className="section-note">
+            {todos.length
+              ? "Todo items appear here as soon as you add them."
+              : "Todo items will appear here."}
+          </p>
 
-          <div className="empty-state" role="status" aria-live="polite">
-            <p className="empty-state-title">No todos yet.</p>
-            <p className="empty-state-copy">
-              Add your first task using the input above when todo creation is
-              enabled.
-            </p>
-          </div>
+          {todos.length ? (
+            <ul className="todo-items" aria-label="Current todos">
+              {todos.map((todo) => (
+                <li className="todo-item" key={todo.id}>
+                  {todo.title}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="empty-state" role="status" aria-live="polite">
+              <p className="empty-state-title">No todos yet.</p>
+              <p className="empty-state-copy">
+                Add your first task using the input above.
+              </p>
+            </div>
+          )}
         </section>
       </section>
     </main>

@@ -106,6 +106,15 @@ input {
   color: var(--text);
 }
 
+.field input[aria-invalid="true"] {
+  border-color: rgba(167, 79, 29, 0.52);
+}
+
+.field-error {
+  color: var(--accent-strong);
+  font-size: 0.92rem;
+}
+
 .todo-form button {
   align-self: end;
   padding: 0.95rem 1.4rem;
@@ -169,6 +178,22 @@ input {
   margin: 0.5rem 0 0;
   color: var(--muted);
   line-height: 1.5;
+}
+
+.todo-items {
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.todo-item {
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(108, 85, 59, 0.16);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.82);
+  font-weight: 600;
 }
 
 @media (max-width: 640px) {
