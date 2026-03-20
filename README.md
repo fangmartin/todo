@@ -45,11 +45,29 @@ Use `npm run format` to normalize the formatting baseline in place. Use
 `npm run format:check` when you want the formatting check without modifying
 files.
 
+## Tests
+
+```bash
+npm test
+```
+
+`npm test` runs the Vitest baseline in a `jsdom` environment so the repo can
+cover React component tests now and plain TypeScript logic tests under the same
+runner as the Todo app grows.
+
+Use watch mode during development with:
+
+```bash
+npm run test:watch
+```
+
 ## Available scripts
 
 - `npm run dev` starts the development server
 - `npm run build` creates a production build
 - `npm run start` runs the production server
+- `npm test` runs the Vitest test suite once
+- `npm run test:watch` runs Vitest in watch mode
 - `npm run lint` runs the code quality baseline
 - `npm run format` normalizes the repo-local formatting baseline
 - `npm run format:check` verifies the formatting baseline without changing files
