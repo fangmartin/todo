@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 
 type Todo = {
   id: number;
@@ -12,6 +12,7 @@ export default function HomePage() {
   const [draft, setDraft] = useState("");
   const [todos, setTodos] = useState<Todo[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
+  const nextTodoId = useRef(1);
 
   const trimmedDraft = draft.trim();
   const todoCountLabel = `${todos.length} item${todos.length === 1 ? "" : "s"}`;
@@ -26,7 +27,7 @@ export default function HomePage() {
 
     setTodos((currentTodos) => [
       ...currentTodos,
-      { id: currentTodos.length + 1, title: trimmedDraft, completed: false },
+      { id: nextTodoId.current++, title: trimmedDraft, completed: false },
     ]);
     setDraft("");
     setErrorMessage("");
@@ -37,6 +38,12 @@ export default function HomePage() {
       currentTodos.map((todo) =>
         todo.id === todoId ? { ...todo, completed: !todo.completed } : todo,
       ),
+    );
+  };
+
+  const handleDeleteTodo = (todoId: number) => {
+    setTodos((currentTodos) =>
+      currentTodos.filter((todo) => todo.id !== todoId),
     );
   };
 
@@ -113,6 +120,14 @@ export default function HomePage() {
                   >
                     {todo.title}
                   </span>
+                  <button
+                    className="todo-delete-button"
+                    type="button"
+                    onClick={() => handleDeleteTodo(todo.id)}
+                    aria-label={`Delete ${todo.title}`}
+                  >
+                    Delete
+                  </button>
                 </li>
               ))}
             </ul>

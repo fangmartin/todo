@@ -213,6 +213,22 @@ input {
   text-decoration: line-through;
 }
 
+.todo-delete-button {
+  flex-shrink: 0;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid rgba(167, 79, 29, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--accent-strong);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.todo-delete-button:focus-visible {
+  outline: 2px solid rgba(211, 109, 49, 0.45);
+  outline-offset: 3px;
+}
+
 .todo-toggle {
   position: relative;
   flex-shrink: 0;
