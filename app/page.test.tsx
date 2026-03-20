@@ -25,6 +25,7 @@ describe("HomePage", () => {
     expect(button).toBeDisabled();
 
     fireEvent.change(input, { target: { value: "Buy milk" } });
+    expect(button).not.toBeDisabled();
     fireEvent.click(button);
 
     expect(screen.getByRole("list", { name: "Current todos" })).toBeInTheDocument();
@@ -37,6 +38,21 @@ describe("HomePage", () => {
     expect(screen.getByText(activeTodoCountLabel(1))).toBeInTheDocument();
     expect(input).toHaveValue("");
     expect(screen.queryByText("Nothing on your list yet.")).not.toBeInTheDocument();
+  });
+
+  it("enables Add todo only for non-empty trimmed input", () => {
+    render(<HomePage />);
+
+    const input = screen.getByRole("textbox", { name: "New task" });
+    const button = screen.getByRole("button", { name: "Add todo" });
+
+    expect(button).toBeDisabled();
+
+    fireEvent.change(input, { target: { value: "Buy milk" } });
+    expect(button).not.toBeDisabled();
+
+    fireEvent.change(input, { target: { value: "   " } });
+    expect(button).toBeDisabled();
   });
 
   it("keeps the composer focused after keyboard submission", () => {

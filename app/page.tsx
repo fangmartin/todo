@@ -126,6 +126,7 @@ export default function HomePage() {
   const pendingFocusTarget = useRef<FocusTarget | null>(null);
 
   const trimmedDraft = draft.trim();
+  const canSubmitDraft = trimmedDraft.length > 0;
   const trimmedEditDraft = editDraft.trim();
   const totalTodoCount = todos.length;
   const activeTodoCount = todos.filter((todo) => !todo.completed).length;
@@ -255,10 +256,8 @@ export default function HomePage() {
       editButtonRefs.current.delete(todoId);
     };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (!trimmedDraft) {
+  const submitDraft = () => {
+    if (!canSubmitDraft) {
       setErrorMessage("Enter a todo before submitting.");
       composerInputRef.current?.focus();
       return;
@@ -271,6 +270,11 @@ export default function HomePage() {
     setDraft("");
     setErrorMessage("");
     composerInputRef.current?.focus();
+  };
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    submitDraft();
   };
 
   const handleToggleTodo = (todoId: number) => {
@@ -406,7 +410,7 @@ export default function HomePage() {
               </span>
             ) : null}
           </div>
-          <button type="submit" disabled={!trimmedDraft}>
+          <button type="button" disabled={!canSubmitDraft} onClick={submitDraft}>
             Add todo
           </button>
         </form>
