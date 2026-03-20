@@ -82,6 +82,7 @@ export default function HomePage() {
   const trimmedDraft = draft.trim();
   const trimmedEditDraft = editDraft.trim();
   const activeTodoCount = todos.filter((todo) => !todo.completed).length;
+  const completedTodoCount = todos.length - activeTodoCount;
   const visibleTodos = todos.filter((todo) => {
     if (filter === "active") {
       return !todo.completed;
@@ -157,6 +158,25 @@ export default function HomePage() {
 
     setTodos((currentTodos) =>
       currentTodos.filter((todo) => todo.id !== todoId),
+    );
+  };
+
+  const handleClearCompleted = () => {
+    if (!completedTodoCount) {
+      return;
+    }
+
+    if (
+      editingTodoId !== null &&
+      todos.some((todo) => todo.id === editingTodoId && todo.completed)
+    ) {
+      setEditingTodoId(null);
+      setEditDraft("");
+      setEditErrorMessage("");
+    }
+
+    setTodos((currentTodos) =>
+      currentTodos.filter((todo) => !todo.completed),
     );
   };
 
@@ -239,18 +259,29 @@ export default function HomePage() {
                 : "Switch filters to view other todos."}
           </p>
 
-          <div className="todo-filters" aria-label="Filter todos">
-            {FILTER_OPTIONS.map((option) => (
+          <div className="todo-toolbar">
+            <div className="todo-filters" aria-label="Filter todos">
+              {FILTER_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  className="todo-filter-button"
+                  type="button"
+                  aria-pressed={filter === option.value}
+                  onClick={() => setFilter(option.value)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            {completedTodoCount ? (
               <button
-                key={option.value}
-                className="todo-filter-button"
+                className="todo-clear-button"
                 type="button"
-                aria-pressed={filter === option.value}
-                onClick={() => setFilter(option.value)}
+                onClick={handleClearCompleted}
               >
-                {option.label}
+                Clear completed
               </button>
-            ))}
+            ) : null}
           </div>
 
           {visibleTodos.length ? (

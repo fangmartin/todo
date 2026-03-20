@@ -160,11 +160,19 @@ input {
   font-size: 0.95rem;
 }
 
+.todo-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-top: 1rem;
+}
+
 .todo-filters {
   display: flex;
   flex-wrap: wrap;
   gap: 0.65rem;
-  margin-top: 1rem;
 }
 
 .todo-filter-button {
@@ -195,6 +203,30 @@ input {
 
 .todo-filter-button:hover {
   transform: translateY(-1px);
+}
+
+.todo-clear-button {
+  padding: 0.55rem 0.95rem;
+  border: 1px solid rgba(167, 79, 29, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--accent-strong);
+  font-size: 0.92rem;
+  font-weight: 700;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    color 120ms ease,
+    transform 120ms ease;
+}
+
+.todo-clear-button:hover {
+  transform: translateY(-1px);
+}
+
+.todo-clear-button:focus-visible {
+  outline: 2px solid rgba(211, 109, 49, 0.45);
+  outline-offset: 3px;
 }
 
 .empty-state {
@@ -381,6 +413,15 @@ input {
   }
 
   .todo-form button {
+    width: 100%;
+  }
+
+  .todo-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .todo-clear-button {
     width: 100%;
   }
 
