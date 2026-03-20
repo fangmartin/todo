@@ -21,6 +21,8 @@ const FILTER_OPTIONS: Array<{ label: string; value: TodoFilter }> = [
   { label: "Completed", value: "completed" },
 ];
 
+const COMPOSER_INPUT_ID = "new-task-input";
+
 const todoMatchesFilter = (todo: Todo, filter: TodoFilter) => {
   if (filter === "active") {
     return !todo.completed;
@@ -35,6 +37,12 @@ const todoMatchesFilter = (todo: Todo, filter: TodoFilter) => {
 
 const getVisibleTodos = (todos: Todo[], filter: TodoFilter) =>
   todos.filter((todo) => todoMatchesFilter(todo, filter));
+
+const getTodoTitleId = (todoId: number) => `todo-title-${todoId}`;
+const getTodoEditInputId = (todoId: number) => `todo-edit-input-${todoId}`;
+const getTodoToggleLabelId = (todoId: number) => `todo-toggle-label-${todoId}`;
+const getTodoEditLabelId = (todoId: number) => `todo-edit-label-${todoId}`;
+const getTodoDeleteLabelId = (todoId: number) => `todo-delete-label-${todoId}`;
 
 const isStoredTodo = (value: unknown): value is Todo => {
   if (!value || typeof value !== "object") {
@@ -324,9 +332,12 @@ export default function HomePage() {
         </div>
 
         <form className="todo-form" aria-label="Todo composer" onSubmit={handleSubmit}>
-          <label className="field">
-            <span className="field-label">New task</span>
+          <div className="field">
+            <label className="field-label" htmlFor={COMPOSER_INPUT_ID}>
+              New task
+            </label>
             <input
+              id={COMPOSER_INPUT_ID}
               ref={composerInputRef}
               type="text"
               placeholder="Add a todo"
@@ -345,7 +356,7 @@ export default function HomePage() {
                 {errorMessage}
               </span>
             ) : null}
-          </label>
+          </div>
           <button type="submit" disabled={!trimmedDraft}>
             Add todo
           </button>
@@ -354,7 +365,9 @@ export default function HomePage() {
         <section className="todo-list-section" aria-labelledby="preview-heading">
           <div className="section-header">
             <h2 id="preview-heading">Todo List</h2>
-            <span>{activeTodoCountLabel}</span>
+            <p className="todo-count" aria-live="polite">
+              {activeTodoCountLabel}
+            </p>
           </div>
 
           <p className="section-note">
@@ -366,7 +379,8 @@ export default function HomePage() {
           </p>
 
           <div className="todo-toolbar">
-            <div className="todo-filters" aria-label="Filter todos">
+            <fieldset className="todo-filters">
+              <legend className="sr-only">Filter todos</legend>
               {FILTER_OPTIONS.map((option) => (
                 <button
                   key={option.value}
@@ -378,7 +392,7 @@ export default function HomePage() {
                   {option.label}
                 </button>
               ))}
-            </div>
+            </fieldset>
             {completedTodoCount ? (
               <button
                 className="todo-clear-button"
@@ -399,13 +413,17 @@ export default function HomePage() {
                 >
                   <label className="todo-toggle">
                     <input
+                      id={`todo-toggle-${todo.id}`}
                       className="todo-toggle-input"
                       type="checkbox"
                       checked={todo.completed}
                       onChange={() => handleToggleTodo(todo.id)}
-                      aria-label={`Toggle completion for ${todo.title}`}
+                      aria-labelledby={`${getTodoToggleLabelId(todo.id)} ${getTodoTitleId(todo.id)}`}
                     />
                     <span className="todo-toggle-indicator" aria-hidden="true" />
+                    <span className="sr-only" id={getTodoToggleLabelId(todo.id)}>
+                      Toggle completion for
+                    </span>
                   </label>
                   {editingTodoId === todo.id ? (
                     <form
@@ -415,7 +433,14 @@ export default function HomePage() {
                         handleSaveTodoEdit(todo.id);
                       }}
                     >
+                      <label
+                        className="sr-only"
+                        htmlFor={getTodoEditInputId(todo.id)}
+                      >
+                        {`Edit ${todo.title}`}
+                      </label>
                       <input
+                        id={getTodoEditInputId(todo.id)}
                         ref={editInputRef}
                         className="todo-edit-input"
                         type="text"
@@ -432,7 +457,6 @@ export default function HomePage() {
                             handleCancelEditingTodo(todo.id);
                           }
                         }}
-                        aria-label={`Edit ${todo.title}`}
                         aria-invalid={Boolean(editErrorMessage)}
                         aria-describedby={
                           editErrorMessage ? `todo-edit-error-${todo.id}` : undefined
@@ -448,7 +472,11 @@ export default function HomePage() {
                           {editErrorMessage}
                         </span>
                       ) : null}
-                      <div className="todo-item-actions">
+                      <div
+                        className="todo-item-actions"
+                        role="group"
+                        aria-label={`Editing actions for ${todo.title}`}
+                      >
                         <button className="todo-save-button" type="submit">
                           Save
                         </button>
@@ -464,27 +492,38 @@ export default function HomePage() {
                   ) : (
                     <>
                       <span
+                        id={getTodoTitleId(todo.id)}
                         className={`todo-title${todo.completed ? " todo-title-completed" : ""}`}
                       >
                         {todo.title}
                       </span>
-                      <div className="todo-item-actions">
+                      <div
+                        className="todo-item-actions"
+                        role="group"
+                        aria-label={`Actions for ${todo.title}`}
+                      >
                         <button
                           ref={setEditButtonRef(todo.id)}
                           className="todo-edit-button"
                           type="button"
                           onClick={() => handleStartEditingTodo(todo)}
-                          aria-label={`Edit ${todo.title}`}
+                          aria-labelledby={`${getTodoEditLabelId(todo.id)} ${getTodoTitleId(todo.id)}`}
                         >
-                          Edit
+                          <span aria-hidden="true">Edit</span>
+                          <span className="sr-only" id={getTodoEditLabelId(todo.id)}>
+                            Edit
+                          </span>
                         </button>
                         <button
                           className="todo-delete-button"
                           type="button"
                           onClick={() => handleDeleteTodo(todo.id)}
-                          aria-label={`Delete ${todo.title}`}
+                          aria-labelledby={`${getTodoDeleteLabelId(todo.id)} ${getTodoTitleId(todo.id)}`}
                         >
-                          Delete
+                          <span aria-hidden="true">Delete</span>
+                          <span className="sr-only" id={getTodoDeleteLabelId(todo.id)}>
+                            Delete
+                          </span>
                         </button>
                       </div>
                     </>

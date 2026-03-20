@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import HomePage, { TODO_STORAGE_KEY } from "./page";
 
@@ -13,6 +13,7 @@ describe("HomePage", () => {
   it("adds a new todo from the composer and shows it in the list", () => {
     render(<HomePage />);
 
+    expect(screen.getByRole("main")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Todo App" })).toBeInTheDocument();
     const input = screen.getByRole("textbox", { name: "New task" });
     const button = screen.getByRole("button", { name: "Add todo" });
@@ -23,10 +24,12 @@ describe("HomePage", () => {
     fireEvent.click(button);
 
     expect(screen.getByRole("list", { name: "Current todos" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Filter todos" })).toBeInTheDocument();
     expect(screen.getByText("Buy milk")).toBeInTheDocument();
     expect(
       screen.getByRole("checkbox", { name: "Toggle completion for Buy milk" }),
     ).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Actions for Buy milk" })).toBeInTheDocument();
     expect(screen.getByText(activeTodoCountLabel(1))).toBeInTheDocument();
     expect(input).toHaveValue("");
     expect(screen.queryByText("No todos yet.")).not.toBeInTheDocument();
@@ -161,6 +164,9 @@ describe("HomePage", () => {
     const editInput = screen.getByRole("textbox", { name: "Edit Buy milk" });
 
     expect(editInput).toHaveValue("Buy milk");
+    expect(
+      screen.getByRole("group", { name: "Editing actions for Buy milk" }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Save" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
 
@@ -421,7 +427,9 @@ describe("HomePage", () => {
     const allFilter = screen.getByRole("button", { name: "All" });
     const activeFilter = screen.getByRole("button", { name: "Active" });
     const completedFilter = screen.getByRole("button", { name: "Completed" });
+    const filterGroup = screen.getByRole("group", { name: "Filter todos" });
 
+    expect(within(filterGroup).getByRole("button", { name: "All" })).toBe(allFilter);
     expect(allFilter).toHaveAttribute("aria-pressed", "true");
     expect(activeFilter).toHaveAttribute("aria-pressed", "false");
     expect(completedFilter).toHaveAttribute("aria-pressed", "false");
