@@ -1,12 +1,16 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
-import HomePage, { TODO_STORAGE_KEY } from "./page";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import HomePage, {
+  STORAGE_UNAVAILABLE_NOTICE,
+  TODO_STORAGE_KEY,
+} from "./page";
 
 const activeTodoCountLabel = (count: number) =>
   `${count} active todo${count === 1 ? "" : "s"} remaining`;
 
 describe("HomePage", () => {
   beforeEach(() => {
+    vi.restoreAllMocks();
     window.localStorage.clear();
   });
 
@@ -32,7 +36,7 @@ describe("HomePage", () => {
     expect(screen.getByRole("group", { name: "Actions for Buy milk" })).toBeInTheDocument();
     expect(screen.getByText(activeTodoCountLabel(1))).toBeInTheDocument();
     expect(input).toHaveValue("");
-    expect(screen.queryByText("No todos yet.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Nothing on your list yet.")).not.toBeInTheDocument();
   });
 
   it("keeps the composer focused after keyboard submission", () => {
@@ -127,7 +131,10 @@ describe("HomePage", () => {
 
     expect(screen.queryByRole("list", { name: "Current todos" })).not.toBeInTheDocument();
     expect(screen.getByText(activeTodoCountLabel(0))).toBeInTheDocument();
-    expect(screen.getByText("No todos yet.")).toBeInTheDocument();
+    expect(screen.getByText("Nothing on your list yet.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Add your first task above to start a calm, focused queue."),
+    ).toBeInTheDocument();
   });
 
   it("rejects whitespace-only todos", () => {
@@ -148,7 +155,7 @@ describe("HomePage", () => {
     );
     expect(screen.queryByRole("list", { name: "Current todos" })).not.toBeInTheDocument();
     expect(screen.getByText(activeTodoCountLabel(0))).toBeInTheDocument();
-    expect(screen.getByText("No todos yet.")).toBeInTheDocument();
+    expect(screen.getByText("Nothing on your list yet.")).toBeInTheDocument();
   });
 
   it("enters edit mode, saves an updated title, and restores the edit after reload", () => {
@@ -472,8 +479,10 @@ describe("HomePage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Completed" }));
 
     expect(screen.queryByRole("list", { name: "Current todos" })).not.toBeInTheDocument();
-    expect(screen.getByText("No completed todos.")).toBeInTheDocument();
-    expect(screen.getByText("Complete a task to see it here.")).toBeInTheDocument();
+    expect(screen.getByText("No completed tasks to review.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Finish a task and it will show up here for a quick recap."),
+    ).toBeInTheDocument();
     expect(screen.getByText(activeTodoCountLabel(1))).toBeInTheDocument();
   });
 
@@ -492,7 +501,7 @@ describe("HomePage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Completed" }));
 
     expect(screen.queryByRole("textbox", { name: "Edit Buy milk" })).not.toBeInTheDocument();
-    expect(screen.getByText("No completed todos.")).toBeInTheDocument();
+    expect(screen.getByText("No completed tasks to review.")).toBeInTheDocument();
   });
 
   it("returns focus to the composer after clearing completed todos", () => {
@@ -520,6 +529,37 @@ describe("HomePage", () => {
 
     expect(screen.queryByRole("list", { name: "Current todos" })).not.toBeInTheDocument();
     expect(screen.getByText(activeTodoCountLabel(0))).toBeInTheDocument();
-    expect(screen.getByText("No todos yet.")).toBeInTheDocument();
+    expect(screen.getByText("Nothing on your list yet.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Add your first task above to start a calm, focused queue."),
+    ).toBeInTheDocument();
+  });
+
+  it("shows a safe session-only notice when storage cannot be read", () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("Storage is blocked");
+    });
+
+    render(<HomePage />);
+
+    expect(screen.getByText(STORAGE_UNAVAILABLE_NOTICE)).toBeInTheDocument();
+    expect(screen.getByText("Nothing on your list yet.")).toBeInTheDocument();
+  });
+
+  it("keeps the app usable when storage writes fail", () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("Storage is blocked");
+    });
+
+    render(<HomePage />);
+
+    const input = screen.getByRole("textbox", { name: "New task" });
+    const button = screen.getByRole("button", { name: "Add todo" });
+
+    fireEvent.change(input, { target: { value: "Buy milk" } });
+    fireEvent.click(button);
+
+    expect(screen.getByText("Buy milk")).toBeInTheDocument();
+    expect(screen.getByText(STORAGE_UNAVAILABLE_NOTICE)).toBeInTheDocument();
   });
 });

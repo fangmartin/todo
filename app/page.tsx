@@ -14,6 +14,8 @@ type FocusTarget =
   | { type: "todo-edit-button"; todoId: number };
 
 export const TODO_STORAGE_KEY = "todo-app.todos";
+export const STORAGE_UNAVAILABLE_NOTICE =
+  "Changes are only saved for this session because browser storage is unavailable.";
 
 const FILTER_OPTIONS: Array<{ label: string; value: TodoFilter }> = [
   { label: "All", value: "all" },
@@ -44,6 +46,11 @@ const getTodoToggleLabelId = (todoId: number) => `todo-toggle-label-${todoId}`;
 const getTodoEditLabelId = (todoId: number) => `todo-edit-label-${todoId}`;
 const getTodoDeleteLabelId = (todoId: number) => `todo-delete-label-${todoId}`;
 
+type StoredTodosResult = {
+  todos: Todo[];
+  notice: string | null;
+};
+
 const isStoredTodo = (value: unknown): value is Todo => {
   if (!value || typeof value !== "object") {
     return false;
@@ -58,39 +65,46 @@ const isStoredTodo = (value: unknown): value is Todo => {
   );
 };
 
-const readStoredTodos = () => {
+const readStoredTodos = (): StoredTodosResult => {
   if (typeof window === "undefined") {
-    return [];
+    return { todos: [], notice: null };
+  }
+
+  let storedTodos: string | null = null;
+
+  try {
+    storedTodos = window.localStorage.getItem(TODO_STORAGE_KEY);
+  } catch {
+    return { todos: [], notice: STORAGE_UNAVAILABLE_NOTICE };
+  }
+
+  if (!storedTodos) {
+    return { todos: [], notice: null };
   }
 
   try {
-    const storedTodos = window.localStorage.getItem(TODO_STORAGE_KEY);
-
-    if (!storedTodos) {
-      return [];
-    }
-
     const parsedTodos: unknown = JSON.parse(storedTodos);
 
     if (!Array.isArray(parsedTodos)) {
-      return [];
+      return { todos: [], notice: null };
     }
 
-    return parsedTodos.filter(isStoredTodo);
+    return { todos: parsedTodos.filter(isStoredTodo), notice: null };
   } catch {
-    return [];
+    return { todos: [], notice: null };
   }
 };
 
 const writeStoredTodos = (todos: Todo[]) => {
   if (typeof window === "undefined") {
-    return;
+    return { notice: null };
   }
 
   try {
     window.localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(todos));
+    return { notice: null };
   } catch {
-    // Ignore storage write failures so the UI remains usable.
+    return { notice: STORAGE_UNAVAILABLE_NOTICE };
   }
 };
 
@@ -102,8 +116,10 @@ export default function HomePage() {
   const [editingTodoId, setEditingTodoId] = useState<number | null>(null);
   const [editDraft, setEditDraft] = useState("");
   const [editErrorMessage, setEditErrorMessage] = useState("");
+  const [storageNotice, setStorageNotice] = useState<string | null>(null);
   const [hasLoadedTodos, setHasLoadedTodos] = useState(false);
   const nextTodoId = useRef(1);
+  const hasPersistedHydratedTodos = useRef(false);
   const composerInputRef = useRef<HTMLInputElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
   const editButtonRefs = useRef(new Map<number, HTMLButtonElement | null>());
@@ -117,23 +133,33 @@ export default function HomePage() {
   const activeTodoCountLabel = `${activeTodoCount} active todo${activeTodoCount === 1 ? "" : "s"} remaining`;
   const emptyStateTitle =
     filter === "active"
-      ? "No active todos."
+      ? "No active tasks right now."
       : filter === "completed"
-        ? "No completed todos."
-        : "No todos yet.";
+        ? "No completed tasks to review."
+        : "Nothing on your list yet.";
   const emptyStateCopy =
     filter === "active"
-      ? "Add a task or mark a completed one as active."
+      ? "Everything is caught up. Add a new task or reopen a completed one."
       : filter === "completed"
-        ? "Complete a task to see it here."
-        : "Add your first task using the input above.";
+        ? "Finish a task and it will show up here for a quick recap."
+        : "Add your first task above to start a calm, focused queue.";
+  const sectionNote = !hasLoadedTodos
+    ? "Checking for saved tasks before showing the latest state."
+    : visibleTodos.length
+      ? "Edit details, mark progress, or clear finished work when the list is ready for a reset."
+      : filter === "all"
+        ? "Start with one clear task and let the rest wait until it matters."
+        : filter === "active"
+          ? "You're caught up for now. Reopen a completed task or add something new."
+          : "Finish a task and it will land here for a quick recap.";
 
   useEffect(() => {
     const restoredTodos = readStoredTodos();
 
-    setTodos(restoredTodos);
+    setTodos(restoredTodos.todos);
+    setStorageNotice(restoredTodos.notice);
     nextTodoId.current =
-      restoredTodos.reduce((maxTodoId, todo) => Math.max(maxTodoId, todo.id), 0) + 1;
+      restoredTodos.todos.reduce((maxTodoId, todo) => Math.max(maxTodoId, todo.id), 0) + 1;
     setHasLoadedTodos(true);
   }, []);
 
@@ -142,7 +168,14 @@ export default function HomePage() {
       return;
     }
 
-    writeStoredTodos(todos);
+    if (!hasPersistedHydratedTodos.current) {
+      hasPersistedHydratedTodos.current = true;
+      return;
+    }
+
+    const persistenceResult = writeStoredTodos(todos);
+
+    setStorageNotice(persistenceResult.notice);
   }, [hasLoadedTodos, todos]);
 
   useEffect(() => {
@@ -323,11 +356,11 @@ export default function HomePage() {
     <main className="page-shell">
       <section className="todo-card">
         <div className="hero-copy">
-          <p className="eyebrow">Starter layout</p>
+          <p className="eyebrow">Daily focus</p>
           <h1>Todo App</h1>
           <p className="lede">
-            Capture what needs doing, then see each todo appear instantly in
-            the list below.
+            Keep the next task visible, clear finished work with confidence,
+            and pick up where you left off when storage is available.
           </p>
         </div>
 
@@ -362,21 +395,21 @@ export default function HomePage() {
           </button>
         </form>
 
+        {storageNotice ? (
+          <p className="storage-notice" role="status" aria-live="polite">
+            {storageNotice}
+          </p>
+        ) : null}
+
         <section className="todo-list-section" aria-labelledby="preview-heading">
           <div className="section-header">
-            <h2 id="preview-heading">Todo List</h2>
+            <h2 id="preview-heading">Current tasks</h2>
             <p className="todo-count" aria-live="polite">
               {activeTodoCountLabel}
             </p>
           </div>
 
-          <p className="section-note">
-            {visibleTodos.length
-              ? "Todo items appear here as soon as you add them."
-              : filter === "all"
-                ? "Todo items will appear here."
-                : "Switch filters to view other todos."}
-          </p>
+          <p className="section-note">{sectionNote}</p>
 
           <div className="todo-toolbar">
             <fieldset className="todo-filters">
@@ -404,7 +437,14 @@ export default function HomePage() {
             ) : null}
           </div>
 
-          {visibleTodos.length ? (
+          {!hasLoadedTodos ? (
+            <div className="startup-state" role="status" aria-live="polite">
+              <p className="startup-state-title">Checking saved tasks</p>
+              <p className="startup-state-copy">
+                Restoring your list before showing the next step.
+              </p>
+            </div>
+          ) : visibleTodos.length ? (
             <ul className="todo-items" aria-label="Current todos">
               {visibleTodos.map((todo) => (
                 <li
