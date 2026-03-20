@@ -127,10 +127,12 @@ export default function HomePage() {
 
   const trimmedDraft = draft.trim();
   const trimmedEditDraft = editDraft.trim();
+  const totalTodoCount = todos.length;
   const activeTodoCount = todos.filter((todo) => !todo.completed).length;
   const completedTodoCount = todos.length - activeTodoCount;
   const visibleTodos = getVisibleTodos(todos, filter);
   const activeTodoCountLabel = `${activeTodoCount} active todo${activeTodoCount === 1 ? "" : "s"} remaining`;
+  const visibleTodoCountLabel = `${visibleTodos.length} of ${totalTodoCount} task${totalTodoCount === 1 ? "" : "s"} shown`;
   const emptyStateTitle =
     filter === "active"
       ? "No active tasks right now."
@@ -362,6 +364,20 @@ export default function HomePage() {
             Keep the next task visible, clear finished work with confidence,
             and pick up where you left off when storage is available.
           </p>
+          <div className="hero-metrics" aria-label="Todo summary">
+            <div className="hero-metric">
+              <span className="hero-metric-value">{activeTodoCount}</span>
+              <span className="hero-metric-label">Active</span>
+            </div>
+            <div className="hero-metric">
+              <span className="hero-metric-value">{completedTodoCount}</span>
+              <span className="hero-metric-label">Completed</span>
+            </div>
+            <div className="hero-metric">
+              <span className="hero-metric-value">{totalTodoCount}</span>
+              <span className="hero-metric-label">Total</span>
+            </div>
+          </div>
         </div>
 
         <form className="todo-form" aria-label="Todo composer" onSubmit={handleSubmit}>
@@ -403,7 +419,12 @@ export default function HomePage() {
 
         <section className="todo-list-section" aria-labelledby="preview-heading">
           <div className="section-header">
-            <h2 id="preview-heading">Current tasks</h2>
+            <div className="section-heading">
+              <h2 id="preview-heading">Current tasks</h2>
+              <p className="section-kicker">
+                A clean view of what still needs attention.
+              </p>
+            </div>
             <p className="todo-count" aria-live="polite">
               {activeTodoCountLabel}
             </p>
@@ -412,6 +433,7 @@ export default function HomePage() {
           <p className="section-note">{sectionNote}</p>
 
           <div className="todo-toolbar">
+            <p className="toolbar-summary">{visibleTodoCountLabel}</p>
             <fieldset className="todo-filters">
               <legend className="sr-only">Filter todos</legend>
               {FILTER_OPTIONS.map((option) => (
@@ -531,12 +553,19 @@ export default function HomePage() {
                     </form>
                   ) : (
                     <>
-                      <span
-                        id={getTodoTitleId(todo.id)}
-                        className={`todo-title${todo.completed ? " todo-title-completed" : ""}`}
-                      >
-                        {todo.title}
-                      </span>
+                      <div className="todo-copy">
+                        <span
+                          id={getTodoTitleId(todo.id)}
+                          className={`todo-title${todo.completed ? " todo-title-completed" : ""}`}
+                        >
+                          {todo.title}
+                        </span>
+                        <span
+                          className={`todo-state${todo.completed ? " todo-state-completed" : ""}`}
+                        >
+                          {todo.completed ? "Completed" : "In progress"}
+                        </span>
+                      </div>
                       <div
                         className="todo-item-actions"
                         role="group"
