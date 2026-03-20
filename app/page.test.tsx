@@ -2,6 +2,9 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import HomePage, { TODO_STORAGE_KEY } from "./page";
 
+const activeTodoCountLabel = (count: number) =>
+  `${count} active todo${count === 1 ? "" : "s"} remaining`;
+
 describe("HomePage", () => {
   beforeEach(() => {
     window.localStorage.clear();
@@ -24,7 +27,7 @@ describe("HomePage", () => {
     expect(
       screen.getByRole("checkbox", { name: "Toggle completion for Buy milk" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("1 item")).toBeInTheDocument();
+    expect(screen.getByText(activeTodoCountLabel(1))).toBeInTheDocument();
     expect(input).toHaveValue("");
     expect(screen.queryByText("No todos yet.")).not.toBeInTheDocument();
   });
@@ -37,6 +40,8 @@ describe("HomePage", () => {
 
     fireEvent.change(input, { target: { value: "Buy milk" } });
     fireEvent.click(button);
+
+    expect(screen.getByText(activeTodoCountLabel(1))).toBeInTheDocument();
 
     const checkbox = screen.getByRole("checkbox", {
       name: "Toggle completion for Buy milk",
@@ -55,6 +60,7 @@ describe("HomePage", () => {
       "todo-item-completed",
     );
     expect(screen.getByText("Buy milk")).toHaveClass("todo-title-completed");
+    expect(screen.getByText(activeTodoCountLabel(0))).toBeInTheDocument();
 
     fireEvent.click(checkbox);
 
@@ -63,6 +69,7 @@ describe("HomePage", () => {
       "todo-item-completed",
     );
     expect(screen.getByText("Buy milk")).not.toHaveClass("todo-title-completed");
+    expect(screen.getByText(activeTodoCountLabel(1))).toBeInTheDocument();
   });
 
   it("deletes a todo immediately without affecting the remaining items", () => {
@@ -76,11 +83,13 @@ describe("HomePage", () => {
     fireEvent.change(input, { target: { value: "Walk dog" } });
     fireEvent.click(button);
 
+    expect(screen.getByText(activeTodoCountLabel(2))).toBeInTheDocument();
+
     fireEvent.click(screen.getByRole("button", { name: "Delete Buy milk" }));
 
     expect(screen.queryByText("Buy milk")).not.toBeInTheDocument();
     expect(screen.getByText("Walk dog")).toBeInTheDocument();
-    expect(screen.getByText("1 item")).toBeInTheDocument();
+    expect(screen.getByText(activeTodoCountLabel(1))).toBeInTheDocument();
   });
 
   it("restores the empty state after deleting the last todo", () => {
@@ -95,7 +104,7 @@ describe("HomePage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Delete Buy milk" }));
 
     expect(screen.queryByRole("list", { name: "Current todos" })).not.toBeInTheDocument();
-    expect(screen.getByText("0 items")).toBeInTheDocument();
+    expect(screen.getByText(activeTodoCountLabel(0))).toBeInTheDocument();
     expect(screen.getByText("No todos yet.")).toBeInTheDocument();
   });
 
@@ -116,7 +125,7 @@ describe("HomePage", () => {
       "Enter a todo before submitting.",
     );
     expect(screen.queryByRole("list", { name: "Current todos" })).not.toBeInTheDocument();
-    expect(screen.getByText("0 items")).toBeInTheDocument();
+    expect(screen.getByText(activeTodoCountLabel(0))).toBeInTheDocument();
     expect(screen.getByText("No todos yet.")).toBeInTheDocument();
   });
 
@@ -131,7 +140,7 @@ describe("HomePage", () => {
 
     render(<HomePage />);
 
-    expect(screen.getByText("2 items")).toBeInTheDocument();
+    expect(screen.getByText(activeTodoCountLabel(1))).toBeInTheDocument();
 
     const completedTodo = screen.getByText("Walk dog");
     const completedCheckbox = screen.getByRole("checkbox", {
@@ -166,6 +175,36 @@ describe("HomePage", () => {
     );
   });
 
+  it("updates the active count when todos are added, completed, uncompleted, and deleted", () => {
+    render(<HomePage />);
+
+    const input = screen.getByRole("textbox", { name: "New task" });
+    const button = screen.getByRole("button", { name: "Add todo" });
+
+    expect(screen.getByText(activeTodoCountLabel(0))).toBeInTheDocument();
+
+    fireEvent.change(input, { target: { value: "Buy milk" } });
+    fireEvent.click(button);
+    expect(screen.getByText(activeTodoCountLabel(1))).toBeInTheDocument();
+
+    fireEvent.change(input, { target: { value: "Walk dog" } });
+    fireEvent.click(button);
+    expect(screen.getByText(activeTodoCountLabel(2))).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Toggle completion for Buy milk" }),
+    );
+    expect(screen.getByText(activeTodoCountLabel(1))).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Toggle completion for Buy milk" }),
+    );
+    expect(screen.getByText(activeTodoCountLabel(2))).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete Walk dog" }));
+    expect(screen.getByText(activeTodoCountLabel(1))).toBeInTheDocument();
+  });
+
   it("filters todos by all, active, and completed states", () => {
     window.localStorage.setItem(
       TODO_STORAGE_KEY,
@@ -186,7 +225,7 @@ describe("HomePage", () => {
     expect(completedFilter).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByText("Buy milk")).toBeInTheDocument();
     expect(screen.getByText("Walk dog")).toBeInTheDocument();
-    expect(screen.getByText("2 items")).toBeInTheDocument();
+    expect(screen.getByText(activeTodoCountLabel(1))).toBeInTheDocument();
 
     fireEvent.click(activeFilter);
 
@@ -194,7 +233,7 @@ describe("HomePage", () => {
     expect(activeFilter).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("Buy milk")).toBeInTheDocument();
     expect(screen.queryByText("Walk dog")).not.toBeInTheDocument();
-    expect(screen.getByText("1 item")).toBeInTheDocument();
+    expect(screen.getByText(activeTodoCountLabel(1))).toBeInTheDocument();
 
     fireEvent.click(completedFilter);
 
@@ -202,14 +241,14 @@ describe("HomePage", () => {
     expect(completedFilter).toHaveAttribute("aria-pressed", "true");
     expect(screen.queryByText("Buy milk")).not.toBeInTheDocument();
     expect(screen.getByText("Walk dog")).toBeInTheDocument();
-    expect(screen.getByText("1 item")).toBeInTheDocument();
+    expect(screen.getByText(activeTodoCountLabel(1))).toBeInTheDocument();
 
     fireEvent.click(allFilter);
 
     expect(allFilter).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("Buy milk")).toBeInTheDocument();
     expect(screen.getByText("Walk dog")).toBeInTheDocument();
-    expect(screen.getByText("2 items")).toBeInTheDocument();
+    expect(screen.getByText(activeTodoCountLabel(1))).toBeInTheDocument();
   });
 
   it("shows a filter-specific empty state when no todos match", () => {
@@ -225,7 +264,7 @@ describe("HomePage", () => {
     expect(screen.queryByRole("list", { name: "Current todos" })).not.toBeInTheDocument();
     expect(screen.getByText("No completed todos.")).toBeInTheDocument();
     expect(screen.getByText("Complete a task to see it here.")).toBeInTheDocument();
-    expect(screen.getByText("0 items")).toBeInTheDocument();
+    expect(screen.getByText(activeTodoCountLabel(1))).toBeInTheDocument();
   });
 
   it("falls back to an empty list when persisted storage is empty", () => {
@@ -234,7 +273,7 @@ describe("HomePage", () => {
     render(<HomePage />);
 
     expect(screen.queryByRole("list", { name: "Current todos" })).not.toBeInTheDocument();
-    expect(screen.getByText("0 items")).toBeInTheDocument();
+    expect(screen.getByText(activeTodoCountLabel(0))).toBeInTheDocument();
     expect(screen.getByText("No todos yet.")).toBeInTheDocument();
   });
 });
