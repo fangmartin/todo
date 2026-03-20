@@ -9,6 +9,9 @@ type Todo = {
 };
 
 type TodoFilter = "all" | "active" | "completed";
+type FocusTarget =
+  | { type: "composer" }
+  | { type: "todo-edit-button"; todoId: number };
 
 export const TODO_STORAGE_KEY = "todo-app.todos";
 
@@ -17,6 +20,21 @@ const FILTER_OPTIONS: Array<{ label: string; value: TodoFilter }> = [
   { label: "Active", value: "active" },
   { label: "Completed", value: "completed" },
 ];
+
+const todoMatchesFilter = (todo: Todo, filter: TodoFilter) => {
+  if (filter === "active") {
+    return !todo.completed;
+  }
+
+  if (filter === "completed") {
+    return todo.completed;
+  }
+
+  return true;
+};
+
+const getVisibleTodos = (todos: Todo[], filter: TodoFilter) =>
+  todos.filter((todo) => todoMatchesFilter(todo, filter));
 
 const isStoredTodo = (value: unknown): value is Todo => {
   if (!value || typeof value !== "object") {
@@ -78,22 +96,16 @@ export default function HomePage() {
   const [editErrorMessage, setEditErrorMessage] = useState("");
   const [hasLoadedTodos, setHasLoadedTodos] = useState(false);
   const nextTodoId = useRef(1);
+  const composerInputRef = useRef<HTMLInputElement>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
+  const editButtonRefs = useRef(new Map<number, HTMLButtonElement | null>());
+  const pendingFocusTarget = useRef<FocusTarget | null>(null);
 
   const trimmedDraft = draft.trim();
   const trimmedEditDraft = editDraft.trim();
   const activeTodoCount = todos.filter((todo) => !todo.completed).length;
   const completedTodoCount = todos.length - activeTodoCount;
-  const visibleTodos = todos.filter((todo) => {
-    if (filter === "active") {
-      return !todo.completed;
-    }
-
-    if (filter === "completed") {
-      return todo.completed;
-    }
-
-    return true;
-  });
+  const visibleTodos = getVisibleTodos(todos, filter);
   const activeTodoCountLabel = `${activeTodoCount} active todo${activeTodoCount === 1 ? "" : "s"} remaining`;
   const emptyStateTitle =
     filter === "active"
@@ -125,11 +137,87 @@ export default function HomePage() {
     writeStoredTodos(todos);
   }, [hasLoadedTodos, todos]);
 
+  useEffect(() => {
+    const nextFocus = pendingFocusTarget.current;
+
+    if (!nextFocus) {
+      return;
+    }
+
+    if (nextFocus.type === "todo-edit-button") {
+      const editButton = editButtonRefs.current.get(nextFocus.todoId);
+
+      if (editButton) {
+        editButton.focus();
+        pendingFocusTarget.current = null;
+        return;
+      }
+    }
+
+    composerInputRef.current?.focus();
+    pendingFocusTarget.current = null;
+  }, [editingTodoId, filter, todos]);
+
+  useEffect(() => {
+    if (!editingTodoId) {
+      return;
+    }
+
+    const editInput = editInputRef.current;
+
+    if (!editInput) {
+      return;
+    }
+
+    editInput.focus();
+    editInput.select();
+  }, [editingTodoId]);
+
+  const queueFocus = (target: FocusTarget) => {
+    pendingFocusTarget.current = target;
+  };
+
+  const resetEditingState = () => {
+    setEditingTodoId(null);
+    setEditDraft("");
+    setEditErrorMessage("");
+  };
+
+  const getFocusTargetAfterRemoval = (todoId: number): FocusTarget => {
+    const remainingVisibleTodos = visibleTodos.filter((todo) => todo.id !== todoId);
+
+    if (!remainingVisibleTodos.length) {
+      return { type: "composer" };
+    }
+
+    const removedTodoIndex = visibleTodos.findIndex((todo) => todo.id === todoId);
+    const nextTodoIndex =
+      removedTodoIndex === -1
+        ? 0
+        : Math.min(removedTodoIndex, remainingVisibleTodos.length - 1);
+
+    return {
+      type: "todo-edit-button",
+      todoId: remainingVisibleTodos[nextTodoIndex].id,
+    };
+  };
+
+  const setEditButtonRef =
+    (todoId: number) => (node: HTMLButtonElement | null) => {
+      if (node) {
+        editButtonRefs.current.set(todoId, node);
+        return;
+      }
+
+      editButtonRefs.current.delete(todoId);
+    };
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!trimmedDraft) {
       setErrorMessage("Enter a todo before submitting.");
+      composerInputRef.current?.focus();
       return;
     }
 
@@ -139,6 +227,7 @@ export default function HomePage() {
     ]);
     setDraft("");
     setErrorMessage("");
+    composerInputRef.current?.focus();
   };
 
   const handleToggleTodo = (todoId: number) => {
@@ -150,10 +239,10 @@ export default function HomePage() {
   };
 
   const handleDeleteTodo = (todoId: number) => {
+    queueFocus(getFocusTargetAfterRemoval(todoId));
+
     if (editingTodoId === todoId) {
-      setEditingTodoId(null);
-      setEditDraft("");
-      setEditErrorMessage("");
+      resetEditingState();
     }
 
     setTodos((currentTodos) =>
@@ -170,11 +259,10 @@ export default function HomePage() {
       editingTodoId !== null &&
       todos.some((todo) => todo.id === editingTodoId && todo.completed)
     ) {
-      setEditingTodoId(null);
-      setEditDraft("");
-      setEditErrorMessage("");
+      resetEditingState();
     }
 
+    queueFocus({ type: "composer" });
     setTodos((currentTodos) =>
       currentTodos.filter((todo) => !todo.completed),
     );
@@ -186,15 +274,18 @@ export default function HomePage() {
     setEditErrorMessage("");
   };
 
-  const handleCancelEditingTodo = () => {
-    setEditingTodoId(null);
-    setEditDraft("");
-    setEditErrorMessage("");
+  const handleCancelEditingTodo = (todoId?: number) => {
+    if (typeof todoId === "number") {
+      queueFocus({ type: "todo-edit-button", todoId });
+    }
+
+    resetEditingState();
   };
 
   const handleSaveTodoEdit = (todoId: number) => {
     if (!trimmedEditDraft) {
       setEditErrorMessage("Edited todo title cannot be empty.");
+      editInputRef.current?.focus();
       return;
     }
 
@@ -203,7 +294,21 @@ export default function HomePage() {
         todo.id === todoId ? { ...todo, title: trimmedEditDraft } : todo,
       ),
     );
-    handleCancelEditingTodo();
+    handleCancelEditingTodo(todoId);
+  };
+
+  const handleFilterChange = (nextFilter: TodoFilter) => {
+    setFilter(nextFilter);
+
+    if (
+      editingTodoId !== null &&
+      todos.some(
+        (todo) =>
+          todo.id === editingTodoId && !todoMatchesFilter(todo, nextFilter),
+      )
+    ) {
+      resetEditingState();
+    }
   };
 
   return (
@@ -222,6 +327,7 @@ export default function HomePage() {
           <label className="field">
             <span className="field-label">New task</span>
             <input
+              ref={composerInputRef}
               type="text"
               placeholder="Add a todo"
               value={draft}
@@ -267,7 +373,7 @@ export default function HomePage() {
                   className="todo-filter-button"
                   type="button"
                   aria-pressed={filter === option.value}
-                  onClick={() => setFilter(option.value)}
+                  onClick={() => handleFilterChange(option.value)}
                 >
                   {option.label}
                 </button>
@@ -310,6 +416,7 @@ export default function HomePage() {
                       }}
                     >
                       <input
+                        ref={editInputRef}
                         className="todo-edit-input"
                         type="text"
                         value={editDraft}
@@ -322,7 +429,7 @@ export default function HomePage() {
                         onKeyDown={(event) => {
                           if (event.key === "Escape") {
                             event.preventDefault();
-                            handleCancelEditingTodo();
+                            handleCancelEditingTodo(todo.id);
                           }
                         }}
                         aria-label={`Edit ${todo.title}`}
@@ -348,7 +455,7 @@ export default function HomePage() {
                         <button
                           className="todo-cancel-button"
                           type="button"
-                          onClick={handleCancelEditingTodo}
+                          onClick={() => handleCancelEditingTodo(todo.id)}
                         >
                           Cancel
                         </button>
@@ -363,6 +470,7 @@ export default function HomePage() {
                       </span>
                       <div className="todo-item-actions">
                         <button
+                          ref={setEditButtonRef(todo.id)}
                           className="todo-edit-button"
                           type="button"
                           onClick={() => handleStartEditingTodo(todo)}

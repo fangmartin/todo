@@ -110,6 +110,12 @@ input {
   border-color: rgba(167, 79, 29, 0.52);
 }
 
+.field input:focus-visible,
+.todo-edit-input:focus-visible {
+  outline: 2px solid rgba(211, 109, 49, 0.45);
+  outline-offset: 3px;
+}
+
 .field-error {
   color: var(--accent-strong);
   font-size: 0.92rem;

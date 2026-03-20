@@ -32,6 +32,25 @@ describe("HomePage", () => {
     expect(screen.queryByText("No todos yet.")).not.toBeInTheDocument();
   });
 
+  it("keeps the composer focused after keyboard submission", () => {
+    render(<HomePage />);
+
+    const input = screen.getByRole("textbox", { name: "New task" });
+    const form = input.closest("form");
+
+    if (!form) {
+      throw new Error("Expected todo composer form to be present.");
+    }
+
+    input.focus();
+    fireEvent.change(input, { target: { value: "Buy milk" } });
+    fireEvent.submit(form);
+
+    expect(input).toHaveFocus();
+    expect(input).toHaveValue("");
+    expect(screen.getByText("Buy milk")).toBeInTheDocument();
+  });
+
   it("toggles a todo completed state on and off", () => {
     render(<HomePage />);
 
@@ -199,6 +218,50 @@ describe("HomePage", () => {
     ).toBeInTheDocument();
   });
 
+  it("restores focus to the edited todo after saving with the keyboard", () => {
+    window.localStorage.setItem(
+      TODO_STORAGE_KEY,
+      JSON.stringify([{ id: 1, title: "Buy milk", completed: false }]),
+    );
+
+    render(<HomePage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit Buy milk" }));
+
+    const editInput = screen.getByRole("textbox", { name: "Edit Buy milk" });
+    const editForm = editInput.closest("form");
+
+    if (!editForm) {
+      throw new Error("Expected todo edit form to be present.");
+    }
+
+    expect(editInput).toHaveFocus();
+
+    fireEvent.change(editInput, { target: { value: "Buy oat milk" } });
+    fireEvent.submit(editForm);
+
+    expect(screen.getByRole("button", { name: "Edit Buy oat milk" })).toHaveFocus();
+  });
+
+  it("restores focus to the edit button after cancelling with Escape", () => {
+    window.localStorage.setItem(
+      TODO_STORAGE_KEY,
+      JSON.stringify([{ id: 1, title: "Buy milk", completed: false }]),
+    );
+
+    render(<HomePage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit Buy milk" }));
+
+    const editInput = screen.getByRole("textbox", { name: "Edit Buy milk" });
+
+    expect(editInput).toHaveFocus();
+
+    fireEvent.keyDown(editInput, { key: "Escape" });
+
+    expect(screen.getByRole("button", { name: "Edit Buy milk" })).toHaveFocus();
+  });
+
   it("restores persisted todos with their completed state on load", () => {
     window.localStorage.setItem(
       TODO_STORAGE_KEY,
@@ -318,6 +381,32 @@ describe("HomePage", () => {
     expect(screen.getByText(activeTodoCountLabel(1))).toBeInTheDocument();
   });
 
+  it("moves focus to a sensible target after deleting todos", () => {
+    render(<HomePage />);
+
+    const input = screen.getByRole("textbox", { name: "New task" });
+    const button = screen.getByRole("button", { name: "Add todo" });
+
+    fireEvent.change(input, { target: { value: "Buy milk" } });
+    fireEvent.click(button);
+    fireEvent.change(input, { target: { value: "Walk dog" } });
+    fireEvent.click(button);
+
+    const firstDeleteButton = screen.getByRole("button", { name: "Delete Buy milk" });
+
+    firstDeleteButton.focus();
+    fireEvent.click(firstDeleteButton);
+
+    expect(screen.getByRole("button", { name: "Edit Walk dog" })).toHaveFocus();
+
+    const lastDeleteButton = screen.getByRole("button", { name: "Delete Walk dog" });
+
+    lastDeleteButton.focus();
+    fireEvent.click(lastDeleteButton);
+
+    expect(input).toHaveFocus();
+  });
+
   it("filters todos by all, active, and completed states", () => {
     window.localStorage.setItem(
       TODO_STORAGE_KEY,
@@ -378,6 +467,42 @@ describe("HomePage", () => {
     expect(screen.getByText("No completed todos.")).toBeInTheDocument();
     expect(screen.getByText("Complete a task to see it here.")).toBeInTheDocument();
     expect(screen.getByText(activeTodoCountLabel(1))).toBeInTheDocument();
+  });
+
+  it("exits edit mode if the selected filter would hide the todo being edited", () => {
+    window.localStorage.setItem(
+      TODO_STORAGE_KEY,
+      JSON.stringify([{ id: 1, title: "Buy milk", completed: false }]),
+    );
+
+    render(<HomePage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit Buy milk" }));
+
+    expect(screen.getByRole("textbox", { name: "Edit Buy milk" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Completed" }));
+
+    expect(screen.queryByRole("textbox", { name: "Edit Buy milk" })).not.toBeInTheDocument();
+    expect(screen.getByText("No completed todos.")).toBeInTheDocument();
+  });
+
+  it("returns focus to the composer after clearing completed todos", () => {
+    window.localStorage.setItem(
+      TODO_STORAGE_KEY,
+      JSON.stringify([{ id: 1, title: "Buy milk", completed: true }]),
+    );
+
+    render(<HomePage />);
+
+    const input = screen.getByRole("textbox", { name: "New task" });
+    const clearCompletedButton = screen.getByRole("button", { name: "Clear completed" });
+
+    clearCompletedButton.focus();
+    fireEvent.click(clearCompletedButton);
+
+    expect(input).toHaveFocus();
+    expect(screen.queryByText("Buy milk")).not.toBeInTheDocument();
   });
 
   it("falls back to an empty list when persisted storage is empty", () => {
