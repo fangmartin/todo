@@ -8,7 +8,15 @@ type Todo = {
   completed: boolean;
 };
 
+type TodoFilter = "all" | "active" | "completed";
+
 export const TODO_STORAGE_KEY = "todo-app.todos";
+
+const FILTER_OPTIONS: Array<{ label: string; value: TodoFilter }> = [
+  { label: "All", value: "all" },
+  { label: "Active", value: "active" },
+  { label: "Completed", value: "completed" },
+];
 
 const isStoredTodo = (value: unknown): value is Todo => {
   if (!value || typeof value !== "object") {
@@ -63,12 +71,36 @@ const writeStoredTodos = (todos: Todo[]) => {
 export default function HomePage() {
   const [draft, setDraft] = useState("");
   const [todos, setTodos] = useState<Todo[]>([]);
+  const [filter, setFilter] = useState<TodoFilter>("all");
   const [errorMessage, setErrorMessage] = useState("");
   const [hasLoadedTodos, setHasLoadedTodos] = useState(false);
   const nextTodoId = useRef(1);
 
   const trimmedDraft = draft.trim();
-  const todoCountLabel = `${todos.length} item${todos.length === 1 ? "" : "s"}`;
+  const visibleTodos = todos.filter((todo) => {
+    if (filter === "active") {
+      return !todo.completed;
+    }
+
+    if (filter === "completed") {
+      return todo.completed;
+    }
+
+    return true;
+  });
+  const todoCountLabel = `${visibleTodos.length} item${visibleTodos.length === 1 ? "" : "s"}`;
+  const emptyStateTitle =
+    filter === "active"
+      ? "No active todos."
+      : filter === "completed"
+        ? "No completed todos."
+        : "No todos yet.";
+  const emptyStateCopy =
+    filter === "active"
+      ? "Add a task or mark a completed one as active."
+      : filter === "completed"
+        ? "Complete a task to see it here."
+        : "Add your first task using the input above.";
 
   useEffect(() => {
     const restoredTodos = readStoredTodos();
@@ -163,14 +195,30 @@ export default function HomePage() {
           </div>
 
           <p className="section-note">
-            {todos.length
+            {visibleTodos.length
               ? "Todo items appear here as soon as you add them."
-              : "Todo items will appear here."}
+              : filter === "all"
+                ? "Todo items will appear here."
+                : "Switch filters to view other todos."}
           </p>
 
-          {todos.length ? (
+          <div className="todo-filters" aria-label="Filter todos">
+            {FILTER_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                className="todo-filter-button"
+                type="button"
+                aria-pressed={filter === option.value}
+                onClick={() => setFilter(option.value)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+
+          {visibleTodos.length ? (
             <ul className="todo-items" aria-label="Current todos">
-              {todos.map((todo) => (
+              {visibleTodos.map((todo) => (
                 <li
                   className={`todo-item${todo.completed ? " todo-item-completed" : ""}`}
                   key={todo.id}
@@ -203,10 +251,8 @@ export default function HomePage() {
             </ul>
           ) : (
             <div className="empty-state" role="status" aria-live="polite">
-              <p className="empty-state-title">No todos yet.</p>
-              <p className="empty-state-copy">
-                Add your first task using the input above.
-              </p>
+              <p className="empty-state-title">{emptyStateTitle}</p>
+              <p className="empty-state-copy">{emptyStateCopy}</p>
             </div>
           )}
         </section>

@@ -166,6 +166,68 @@ describe("HomePage", () => {
     );
   });
 
+  it("filters todos by all, active, and completed states", () => {
+    window.localStorage.setItem(
+      TODO_STORAGE_KEY,
+      JSON.stringify([
+        { id: 1, title: "Buy milk", completed: false },
+        { id: 2, title: "Walk dog", completed: true },
+      ]),
+    );
+
+    render(<HomePage />);
+
+    const allFilter = screen.getByRole("button", { name: "All" });
+    const activeFilter = screen.getByRole("button", { name: "Active" });
+    const completedFilter = screen.getByRole("button", { name: "Completed" });
+
+    expect(allFilter).toHaveAttribute("aria-pressed", "true");
+    expect(activeFilter).toHaveAttribute("aria-pressed", "false");
+    expect(completedFilter).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByText("Buy milk")).toBeInTheDocument();
+    expect(screen.getByText("Walk dog")).toBeInTheDocument();
+    expect(screen.getByText("2 items")).toBeInTheDocument();
+
+    fireEvent.click(activeFilter);
+
+    expect(allFilter).toHaveAttribute("aria-pressed", "false");
+    expect(activeFilter).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("Buy milk")).toBeInTheDocument();
+    expect(screen.queryByText("Walk dog")).not.toBeInTheDocument();
+    expect(screen.getByText("1 item")).toBeInTheDocument();
+
+    fireEvent.click(completedFilter);
+
+    expect(activeFilter).toHaveAttribute("aria-pressed", "false");
+    expect(completedFilter).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByText("Buy milk")).not.toBeInTheDocument();
+    expect(screen.getByText("Walk dog")).toBeInTheDocument();
+    expect(screen.getByText("1 item")).toBeInTheDocument();
+
+    fireEvent.click(allFilter);
+
+    expect(allFilter).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("Buy milk")).toBeInTheDocument();
+    expect(screen.getByText("Walk dog")).toBeInTheDocument();
+    expect(screen.getByText("2 items")).toBeInTheDocument();
+  });
+
+  it("shows a filter-specific empty state when no todos match", () => {
+    window.localStorage.setItem(
+      TODO_STORAGE_KEY,
+      JSON.stringify([{ id: 1, title: "Buy milk", completed: false }]),
+    );
+
+    render(<HomePage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Completed" }));
+
+    expect(screen.queryByRole("list", { name: "Current todos" })).not.toBeInTheDocument();
+    expect(screen.getByText("No completed todos.")).toBeInTheDocument();
+    expect(screen.getByText("Complete a task to see it here.")).toBeInTheDocument();
+    expect(screen.getByText("0 items")).toBeInTheDocument();
+  });
+
   it("falls back to an empty list when persisted storage is empty", () => {
     window.localStorage.setItem(TODO_STORAGE_KEY, "");
 
