@@ -77,6 +77,7 @@ export default function HomePage() {
   const nextTodoId = useRef(1);
 
   const trimmedDraft = draft.trim();
+  const activeTodoCount = todos.filter((todo) => !todo.completed).length;
   const visibleTodos = todos.filter((todo) => {
     if (filter === "active") {
       return !todo.completed;
@@ -88,7 +89,7 @@ export default function HomePage() {
 
     return true;
   });
-  const todoCountLabel = `${visibleTodos.length} item${visibleTodos.length === 1 ? "" : "s"}`;
+  const activeTodoCountLabel = `${activeTodoCount} active todo${activeTodoCount === 1 ? "" : "s"} remaining`;
   const emptyStateTitle =
     filter === "active"
       ? "No active todos."
@@ -191,7 +192,7 @@ export default function HomePage() {
         <section className="todo-list-section" aria-labelledby="preview-heading">
           <div className="section-header">
             <h2 id="preview-heading">Todo List</h2>
-            <span>{todoCountLabel}</span>
+            <span>{activeTodoCountLabel}</span>
           </div>
 
           <p className="section-note">
