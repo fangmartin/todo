@@ -1,19 +1,13 @@
-const previewTodos = [
-  { id: 1, title: "Plan the week", done: false },
-  { id: 2, title: "Ship the scaffold", done: true },
-  { id: 3, title: "Review tomorrow's priorities", done: false },
-];
-
 export default function HomePage() {
   return (
     <main className="page-shell">
       <section className="todo-card">
         <div className="hero-copy">
-          <p className="eyebrow">Todo App</p>
-          <h1>Capture tasks, keep focus, ship cleanly.</h1>
+          <p className="eyebrow">Starter layout</p>
+          <h1>Todo App</h1>
           <p className="lede">
-            This starter is intentionally small: App Router, TypeScript, and a
-            production-ready foundation for building a real todo workflow.
+            A clean shell for capturing tasks is ready. Adding, listing, and
+            managing todos will come next.
           </p>
         </div>
 
@@ -22,7 +16,7 @@ export default function HomePage() {
             <span className="field-label">New task</span>
             <input
               type="text"
-              placeholder="Add a task"
+              placeholder="Add a todo"
               disabled
               aria-disabled="true"
             />
@@ -34,22 +28,19 @@ export default function HomePage() {
 
         <section className="todo-list-section" aria-labelledby="preview-heading">
           <div className="section-header">
-            <h2 id="preview-heading">Today</h2>
-            <span>3 items</span>
+            <h2 id="preview-heading">Todo List</h2>
+            <span>0 items</span>
           </div>
 
-          <ul className="todo-list">
-            {previewTodos.map((todo) => (
-              <li key={todo.id} className="todo-item">
-                <label>
-                  <input type="checkbox" checked={todo.done} readOnly />
-                  <span className={todo.done ? "todo-text done" : "todo-text"}>
-                    {todo.title}
-                  </span>
-                </label>
-              </li>
-            ))}
-          </ul>
+          <p className="section-note">Todo items will appear here.</p>
+
+          <div className="empty-state" role="status" aria-live="polite">
+            <p className="empty-state-title">No todos yet.</p>
+            <p className="empty-state-copy">
+              Add your first task using the input above when todo creation is
+              enabled.
+            </p>
+          </div>
         </section>
       </section>
     </main>
